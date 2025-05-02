@@ -90,7 +90,11 @@
                 ></select>
               </div>
               <div class="col-sm-12 col-md-6">
-                <select class="form-select" id="fixed-type" disabled></select>
+                <select
+                  class="form-select select-dropdown"
+                  id="fixed-type"
+                  disabled
+                ></select>
               </div>
               <div class="col-sm-12 d-flex align-items-end">
                 <button
@@ -128,22 +132,18 @@
 
           <div id="compare" class="tab-pane">
             <div class="compare-section">
-              <h4>Saving vs Fixed Compare</h4>
-              <button
+              <!--<button
                 class="btn btn-danger mb-2"
                 onclick="clearCompareList('all')"
               >
-                🧹 Clear All
-              </button>
+                Clear All
+               </button> -->
               <div class="table-responsive">
                 <table class="table table-bordered">
                   <thead class="table-light">
                     <tr>
-                      <th>Source</th>
                       <th>Bank</th>
-                      <th>Type</th>
                       <th>Interest</th>
-                      <th>Minimum</th>
                       <th>Tenure</th>
                       <th>Action</th>
                     </tr>
@@ -267,7 +267,7 @@
             <td>${item.bank}<br> <span>${item.type}</span></td>
             <td>${item.interest}</td>
             <td>${tab === "saving" ? item.minimum : item.tenure}</td>
-            <td><button class="btn btn-sm btn-outline-danger" onclick="removeFromCompare('${tab}', ${index})">🗑 Delete</button></td>
+            <td><button class="btn btn-sm btn-outline-danger" onclick="removeFromCompare('${tab}', ${index})">🗑</button></td>
           </tr>
         `
             )
@@ -287,13 +287,10 @@
             .map(
               (item, index) => `
           <tr>
-            <td>${item.source}</td>
-            <td>${item.bank}</td>
-            <td>${item.type}</td>
+            <td> ${item.bank}<br> <span>${item.source}</span></td>
             <td>${item.interest}</td>
-            <td>${item.minimum || "-"}</td>
             <td>${item.tenure || "-"}</td>
-            <td><button class="btn btn-sm btn-outline-danger" onclick="removeFromVSCompare(${index})">🗑 Delete</button></td>
+            <td><button class="btn btn-sm btn-outline-danger" onclick="removeFromVSCompare(${index})">🗑</button></td>
           </tr>
         `
             )
