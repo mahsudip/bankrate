@@ -11,7 +11,6 @@
     <link href="style.css" rel="stylesheet" />
   </head>
   <body>
-    <!-- <div class="pull-to-refresh"></div> -->
     <div class="container p-4">
       <div id="loader" class="alert alert-info">⏳ Fetching latest data...</div>
 
@@ -26,11 +25,12 @@
             <a class="nav-link" data-tab="fixed" href="#">Fixed</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" data-tab="compare" href="#">Saving vs FD</a>
+            <a class="nav-link" data-tab="favourites" href="#">Favourites</a>
           </li>
         </ul>
 
         <div class="tab-content">
+          <!-- Saving Tab -->
           <div id="saving" class="tab-pane active">
             <div class="row g-3 align-items-center">
               <div class="col-12 col-md-6">
@@ -46,7 +46,7 @@
                   disabled
                 ></select>
               </div>
-              <div class="col-sm-12 col-md-6 d-flex align-items-end">
+              <div class="col-sm-12 d-flex align-items-end">
                 <button
                   id="saving-add-btn"
                   class="btn btn-primary w-100"
@@ -80,6 +80,7 @@
             </div>
           </div>
 
+          <!-- Fixed Tab -->
           <div id="fixed" class="tab-pane">
             <div class="row g-3 align-items-center">
               <div class="col-sm-12 col-md-6">
@@ -89,13 +90,9 @@
                 ></select>
               </div>
               <div class="col-sm-12 col-md-6">
-                <select
-                  class="form-select select-dropdown"
-                  id="fixed-type"
-                  disabled
-                ></select>
+                <select class="form-select" id="fixed-type" disabled></select>
               </div>
-              <div class="col-sm-12 col-md-6 d-flex align-items-end">
+              <div class="col-sm-12 d-flex align-items-end">
                 <button
                   id="fixed-add-btn"
                   class="btn btn-success w-100"
@@ -129,27 +126,34 @@
             </div>
           </div>
 
-          <div id="compare" class="tab-pane">
-            <div class="compare-section">
-              <!--<button
-                class="btn btn-danger mb-2"
-                onclick="clearCompareList('all')"
-              >
-                Clear All
-               </button> -->
-              <div class="table-responsive">
-                <table class="table table-bordered">
-                  <thead class="table-light">
-                    <tr>
-                      <th>Bank</th>
-                      <th>Interest</th>
-                      <th>Tenure</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody id="vs-compare-table"></tbody>
-                </table>
+          <!-- Favourites Tab -->
+          <div id="favourites" class="tab-pane">
+            <h4>Add Your Favourite Bank</h4>
+            <div class="row g-3 align-items-center mb-3">
+              <div class="col-md-6">
+                <select class="form-select" id="fav-bank">
+                  <option value="">Select Bank</option>
+                </select>
               </div>
+              <div class="col-md-6">
+                <select class="form-select" id="fav-type" disabled>
+                  <option value="">Select Type</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <button
+                  class="btn btn-warning w-100"
+                  id="fav-add-btn"
+                  disabled
+                  onclick="addToFavourites()"
+                >
+                  ➕ Add to Favourites
+                </button>
+              </div>
+            </div>
+
+            <div class="row" id="favourite-list">
+              <!-- Favourite cards go here -->
             </div>
           </div>
         </div>
@@ -159,6 +163,7 @@
     <script>
       const savingCompareList = [];
       const fixedCompareList = [];
+      const favouriteList = [];
 
       async function fetchAndLoadData() {
         try {
@@ -172,6 +177,7 @@
           initTab("saving", window.savinglist);
           initTab("fixed", window.fixedlist);
           setupTabs();
+          setupFavouritesTab();
         } catch (error) {
           document.getElementById("loader").innerText =
             "❌ Failed to load data: " + error.message;
@@ -266,50 +272,18 @@
             <td>${item.bank}<br> <span>${item.type}</span></td>
             <td>${item.interest}</td>
             <td>${tab === "saving" ? item.minimum : item.tenure}</td>
-            <td><button class="btn btn-sm btn-outline-danger" onclick="removeFromCompare('${tab}', ${index})">🗑</button></td>
+            <td><button class="btn btn-sm btn-outline-danger" onclick="removeFromCompare('${tab}', ${index})">🗑 Delete</button></td>
           </tr>
         `
             )
             .join("") ||
           `<tr><td colspan="5">No items in compare list</td></tr>`;
-        renderVSCompareList();
-      }
-
-      function renderVSCompareList() {
-        const all = [
-          ...savingCompareList.map((item) => ({ ...item, source: "Saving" })),
-          ...fixedCompareList.map((item) => ({ ...item, source: "Fixed" })),
-        ];
-        const tbody = document.getElementById("vs-compare-table");
-        tbody.innerHTML =
-          all
-            .map(
-              (item, index) => `
-          <tr>
-            <td> ${item.bank}<br> <span>${item.source}</span></td>
-            <td>${item.interest}</td>
-            <td>${item.tenure || "-"}</td>
-            <td><button class="btn btn-sm btn-outline-danger" onclick="removeFromVSCompare(${index})">🗑</button></td>
-          </tr>
-        `
-            )
-            .join("") ||
-          `<tr><td colspan="7">No items in compare list</td></tr>`;
       }
 
       function removeFromCompare(tab, index) {
         if (tab === "saving") savingCompareList.splice(index, 1);
         else fixedCompareList.splice(index, 1);
         renderCompareList(tab);
-      }
-
-      function removeFromVSCompare(index) {
-        const totalSaving = savingCompareList.length;
-        if (index < totalSaving) {
-          removeFromCompare("saving", index);
-        } else {
-          removeFromCompare("fixed", index - totalSaving);
-        }
       }
 
       function clearCompareList(tab) {
@@ -346,27 +320,106 @@
         });
       }
 
-      fetchAndLoadData();
+      // Favourites tab setup & functions
+      function setupFavouritesTab() {
+        const data = [...window.savinglist, ...window.fixedlist];
+        const favBankSelect = document.getElementById("fav-bank");
+        const favTypeSelect = document.getElementById("fav-type");
+        const favAddBtn = document.getElementById("fav-add-btn");
 
-      const pullToRefresh = document.querySelector(".pull-to-refresh");
-      let touchstartY = 0;
-      document.addEventListener("touchstart", (e) => {
-        touchstartY = e.touches[0].clientY;
-      });
-      document.addEventListener("touchmove", (e) => {
-        const touchY = e.touches[0].clientY;
-        const touchDiff = touchY - touchstartY;
-        if (touchDiff > 0 && window.scrollY === 0) {
-          pullToRefresh.classList.add("visible");
-          e.preventDefault();
+        const uniqueBanks = [...new Set(data.map((d) => d.bank))].sort();
+        favBankSelect.innerHTML =
+          `<option value="">Select Bank</option>` +
+          uniqueBanks.map((b) => `<option value="${b}">${b}</option>`).join("");
+
+        favBankSelect.onchange = () => {
+          const selectedBank = favBankSelect.value;
+          favTypeSelect.disabled = true;
+          favAddBtn.disabled = true;
+
+          if (!selectedBank) {
+            favTypeSelect.innerHTML = "";
+            return;
+          }
+
+          const types = [
+            ...new Set(
+              data.filter((d) => d.bank === selectedBank).map((d) => d.type)
+            ),
+          ];
+          favTypeSelect.innerHTML =
+            `<option value="">Select Type</option>` +
+            types.map((t) => `<option value="${t}">${t}</option>`).join("");
+          favTypeSelect.disabled = false;
+        };
+
+        favTypeSelect.onchange = () => {
+          favAddBtn.disabled = !favTypeSelect.value;
+        };
+      }
+
+      function addToFavourites() {
+        const bank = document.getElementById("fav-bank").value;
+        const type = document.getElementById("fav-type").value;
+        const data = [...window.savinglist, ...window.fixedlist];
+        const match = data.find((d) => d.bank === bank && d.type === type);
+
+        if (
+          match &&
+          !favouriteList.find((f) => f.bank === bank && f.type === type)
+        ) {
+          favouriteList.push(match);
+          renderFavourites();
         }
-      });
-      document.addEventListener("touchend", (e) => {
-        if (pullToRefresh.classList.contains("visible")) {
-          pullToRefresh.classList.remove("visible");
-          location.reload();
-        }
-      });
+
+        document.getElementById("fav-bank").value = "";
+        document.getElementById("fav-type").innerHTML = "";
+        document.getElementById("fav-type").disabled = true;
+        document.getElementById("fav-add-btn").disabled = true;
+      }
+
+      function renderFavourites() {
+        const container = document.getElementById("favourite-list");
+        container.innerHTML =
+          favouriteList.length === 0
+            ? `<p>No favourites added yet.</p>`
+            : favouriteList
+                .map(
+                  (item, i) => `
+          <div class="col-sm-6 col-md-4 col-lg-3 mb-3">
+            <div class="card h-100 shadow-sm">
+              <div class="card-body">
+                <h5 class="card-title text-center">${item.bank}</h5>
+                <p class="text-muted text-center mb-1">${item.type}</p>
+                <p class="text-center mb-0">Interest: <strong>${
+                  item.interest
+                }</strong></p>
+                ${
+                  item.minimum
+                    ? `<p class="text-center mb-0">Min: ${item.minimum}</p>`
+                    : ""
+                }
+                ${
+                  item.tenure
+                    ? `<p class="text-center mb-0">Tenure: ${item.tenure}</p>`
+                    : ""
+                }
+                <div class="d-grid mt-3">
+                  <button class="btn btn-sm btn-outline-danger" onclick="removeFavourite(${i})">Remove</button>
+                </div>
+              </div>
+            </div>
+          </div>`
+                )
+                .join("");
+      }
+
+      function removeFavourite(index) {
+        favouriteList.splice(index, 1);
+        renderFavourites();
+      }
+
+      fetchAndLoadData();
     </script>
   </body>
 </html>
