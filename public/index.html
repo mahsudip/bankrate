@@ -163,7 +163,24 @@
     <script>
       const savingCompareList = [];
       const fixedCompareList = [];
-      const favouriteList = [];
+      let favouriteList = [];
+
+      // Load favourites from localStorage if present
+      function loadFavouritesFromStorage() {
+        const stored = localStorage.getItem("bankFavourites");
+        if (stored) {
+          try {
+            favouriteList = JSON.parse(stored);
+          } catch {
+            favouriteList = [];
+          }
+        }
+      }
+
+      // Save favourites to localStorage
+      function saveFavouritesToStorage() {
+        localStorage.setItem("bankFavourites", JSON.stringify(favouriteList));
+      }
 
       async function fetchAndLoadData() {
         try {
@@ -178,6 +195,9 @@
           initTab("fixed", window.fixedlist);
           setupTabs();
           setupFavouritesTab();
+
+          loadFavouritesFromStorage();
+          renderFavourites();
         } catch (error) {
           document.getElementById("loader").innerText =
             "❌ Failed to load data: " + error.message;
@@ -200,9 +220,7 @@
 
       function getTypesForBank(data, bank) {
         return [
-          ...new Set(
-            data.filter((item) => item.bank === bank).map((item) => item.type)
-          ),
+          ...new Set(data.filter((item) => item.bank === bank).map((item) => item.type)),
         ].sort();
       }
 
@@ -210,9 +228,7 @@
         const banks = getUniqueBanks(data);
         bankSelect.innerHTML =
           `<option value="">Choose a Bank</option>` +
-          banks
-            .map((bank) => `<option value="${bank}">${bank}</option>`)
-            .join("");
+          banks.map((bank) => `<option value="${bank}">${bank}</option>`).join("");
 
         bankSelect.onchange = () => {
           const selectedBank = bankSelect.value;
@@ -227,9 +243,7 @@
           const types = getTypesForBank(data, selectedBank);
           typeSelect.innerHTML =
             `<option value="">Choose a A/C Type</option>` +
-            types
-              .map((type) => `<option value="${type}">${type}</option>`)
-              .join("");
+            types.map((type) => `<option value="${type}">${type}</option>`).join("");
           typeSelect.disabled = false;
         };
 
@@ -242,13 +256,10 @@
       }
 
       function addSelectedToCompare(tab) {
-        const dataList =
-          tab === "saving" ? window.savinglist : window.fixedlist;
+        const dataList = tab === "saving" ? window.savinglist : window.fixedlist;
         const bank = document.getElementById(`${tab}-bank`).value;
         const type = document.getElementById(`${tab}-type`).value;
-        const match = dataList.find(
-          (item) => item.bank === bank && item.type === type
-        );
+        const match = dataList.find((item) => item.bank === bank && item.type === type);
         if (match) {
           if (tab === "saving") savingCompareList.push(match);
           else fixedCompareList.push(match);
@@ -308,12 +319,8 @@
         document.querySelectorAll("#tabs .nav-link").forEach((tab) => {
           tab.onclick = (e) => {
             e.preventDefault();
-            document
-              .querySelectorAll("#tabs .nav-link")
-              .forEach((t) => t.classList.remove("active"));
-            document
-              .querySelectorAll(".tab-pane")
-              .forEach((c) => c.classList.remove("active"));
+            document.querySelectorAll("#tabs .nav-link").forEach((t) => t.classList.remove("active"));
+            document.querySelectorAll(".tab-pane").forEach((c) => c.classList.remove("active"));
             tab.classList.add("active");
             document.getElementById(tab.dataset.tab).classList.add("active");
           };
@@ -342,11 +349,7 @@
             return;
           }
 
-          const types = [
-            ...new Set(
-              data.filter((d) => d.bank === selectedBank).map((d) => d.type)
-            ),
-          ];
+          const types = [...new Set(data.filter((d) => d.bank === selectedBank).map((d) => d.type))];
           favTypeSelect.innerHTML =
             `<option value="">Select Type</option>` +
             types.map((t) => `<option value="${t}">${t}</option>`).join("");
@@ -364,11 +367,9 @@
         const data = [...window.savinglist, ...window.fixedlist];
         const match = data.find((d) => d.bank === bank && d.type === type);
 
-        if (
-          match &&
-          !favouriteList.find((f) => f.bank === bank && f.type === type)
-        ) {
+        if (match && !favouriteList.find((f) => f.bank === bank && f.type === type)) {
           favouriteList.push(match);
+          saveFavouritesToStorage();
           renderFavourites();
         }
 
@@ -391,19 +392,9 @@
               <div class="card-body">
                 <h5 class="card-title text-center">${item.bank}</h5>
                 <p class="text-muted text-center mb-1">${item.type}</p>
-                <p class="text-center mb-0">Interest: <strong>${
-                  item.interest
-                }</strong></p>
-                ${
-                  item.minimum
-                    ? `<p class="text-center mb-0">Min: ${item.minimum}</p>`
-                    : ""
-                }
-                ${
-                  item.tenure
-                    ? `<p class="text-center mb-0">Tenure: ${item.tenure}</p>`
-                    : ""
-                }
+                <p class="text-center mb-0">Interest: <strong>${item.interest}</strong></p>
+                ${item.minimum ? `<p class="text-center mb-0">Min: ${item.minimum}</p>` : ""}
+                ${item.tenure ? `<p class="text-center mb-0">Tenure: ${item.tenure}</p>` : ""}
                 <div class="d-grid mt-3">
                   <button class="btn btn-sm btn-outline-danger" onclick="removeFavourite(${i})">Remove</button>
                 </div>
@@ -416,6 +407,7 @@
 
       function removeFavourite(index) {
         favouriteList.splice(index, 1);
+        saveFavouritesToStorage();
         renderFavourites();
       }
 
